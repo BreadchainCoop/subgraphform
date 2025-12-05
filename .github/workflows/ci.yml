@@ -1,0 +1,43 @@
+# Example: How to use the subgraphform reusable workflow
+#
+# This workflow demonstrates how consumer repositories should integrate
+# with subgraphform. Copy this pattern to your own repository.
+#
+# It also serves as a live test of the reusable workflow against the
+# example subgraph in this repository.
+
+name: Example CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  # This is exactly how you would call the workflow from another repository.
+  # The only difference is the workflow reference:
+  #   - From another repo: BreadchainCoop/subgraphform/.github/workflows/_subgraph-cicd.yml@main
+  #   - From this repo: ./.github/workflows/_subgraph-cicd.yml (relative path)
+  subgraph:
+    uses: ./.github/workflows/_subgraph-cicd.yml
+    with:
+      # Required: Your subgraph name in The Graph Studio
+      subgraph-name: example-subgraph
+
+      # Optional: Path to subgraph directory (default: ".")
+      working-directory: subgraph
+
+      # Optional: Deploy settings (defaults shown)
+      deploy-on-pr: false
+      deploy-on-main: false  # Disabled for example - enable in your repo
+
+      # Optional: Skip tests since example has no real tests
+      run-tests: false
+
+      # Optional: Node.js version (default: "20")
+      # node-version: "20"
+    secrets:
+      # Required: Your Graph Studio deploy key
+      # Set this in your repo's Settings > Secrets > Actions
+      GRAPH_DEPLOY_KEY: ${{ secrets.GRAPH_DEPLOY_KEY }}

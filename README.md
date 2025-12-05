@@ -90,19 +90,28 @@ jobs:
       GRAPH_DEPLOY_KEY: ${{ secrets.GRAPH_DEPLOY_KEY }}
 ```
 
-## Template Subgraph
+## Live Example
 
-The `subgraph/` directory contains an example subgraph structure you can use as a starting point:
+This repository includes a working example that demonstrates the integration pattern:
+
+- **[`.github/workflows/ci.yml`](.github/workflows/ci.yml)** - Example workflow that calls the reusable workflow
+- **[`subgraph/`](subgraph/)** - Template subgraph used by the example workflow
+
+The example workflow shows all available options with comments explaining each one. It runs on every PR and push to validate the reusable workflow works correctly.
 
 ```
-subgraph/
-├── abis/                   # Contract ABIs
-├── src/                    # AssemblyScript mappings
-├── docker-compose.yml      # Local graph-node setup
-├── package.json            # Dependencies
-├── schema.graphql          # GraphQL schema
-├── subgraph.yaml           # Subgraph manifest
-└── tsconfig.json           # TypeScript config
+.
+├── .github/workflows/
+│   ├── _subgraph-cicd.yml  # Reusable workflow (what you call)
+│   └── ci.yml              # Example usage (copy this pattern)
+└── subgraph/               # Example subgraph structure
+    ├── abis/               # Contract ABIs
+    ├── src/                # AssemblyScript mappings
+    ├── docker-compose.yml  # Local graph-node setup
+    ├── package.json        # Dependencies
+    ├── schema.graphql      # GraphQL schema
+    ├── subgraph.yaml       # Subgraph manifest
+    └── tsconfig.json       # TypeScript config
 ```
 
 ## License
