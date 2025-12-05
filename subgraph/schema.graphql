@@ -4,7 +4,7 @@
 """
 Example entity - replace with your own entities
 """
-type ExampleEntity @entity {
+type ExampleEntity @entity(immutable: true) {
   "Unique identifier (e.g., transaction hash or event ID)"
   id: ID!
 
