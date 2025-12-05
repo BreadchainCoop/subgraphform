@@ -1,0 +1,22 @@
+# Example GraphQL Schema for The Graph Subgraph
+# Replace this with your actual schema
+
+"""
+Example entity - replace with your own entities
+"""
+type ExampleEntity @entity {
+  "Unique identifier (e.g., transaction hash or event ID)"
+  id: ID!
+
+  "Block number when this entity was created"
+  blockNumber: BigInt!
+
+  "Timestamp when this entity was created"
+  timestamp: BigInt!
+
+  "Example address field"
+  from: Bytes!
+
+  "Example value field"
+  value: BigInt!
+}

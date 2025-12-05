@@ -1,0 +1,59 @@
+# Subgraph Manifest
+# Documentation: https://thegraph.com/docs/en/developing/creating-a-subgraph/
+
+specVersion: 1.3.0
+
+# Optional: Indexer hints for pruning
+indexerHints:
+  prune: auto
+
+schema:
+  file: ./schema.graphql
+
+dataSources:
+  - kind: ethereum
+    name: ExampleContract
+    # Replace 'mainnet' with your target network (e.g., mainnet, goerli, polygon, arbitrum-one)
+    network: mainnet
+    source:
+      # Replace with your contract address
+      address: "0x0000000000000000000000000000000000000000"
+      # Replace with your contract ABI filename
+      abi: ExampleContract
+      # Replace with the block number when your contract was deployed
+      startBlock: 0
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.9
+      language: wasm/assemblyscript
+      entities:
+        - ExampleEntity
+      abis:
+        - name: ExampleContract
+          file: ./abis/ExampleContract.json
+      eventHandlers:
+        # Replace with your actual event signatures
+        - event: Transfer(indexed address,indexed address,uint256)
+          handler: handleTransfer
+      file: ./src/mapping.ts
+
+# Templates for dynamically created data sources (if needed)
+# templates:
+#   - kind: ethereum
+#     name: DynamicContract
+#     network: mainnet
+#     source:
+#       abi: DynamicContract
+#     mapping:
+#       kind: ethereum/events
+#       apiVersion: 0.0.9
+#       language: wasm/assemblyscript
+#       entities:
+#         - SomeEntity
+#       abis:
+#         - name: DynamicContract
+#           file: ./abis/DynamicContract.json
+#       eventHandlers:
+#         - event: SomeEvent(indexed address,uint256)
+#           handler: handleSomeEvent
+#       file: ./src/dynamic-contract.ts
