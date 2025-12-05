@@ -1,22 +1,25 @@
-# Example GraphQL Schema for The Graph Subgraph
-# Replace this with your actual schema
+# Example Schema - ERC20 Transfer tracking
+# This schema tracks token transfers
 
-"""
-Example entity - replace with your own entities
-"""
-type ExampleEntity @entity(immutable: true) {
-  "Unique identifier (e.g., transaction hash or event ID)"
+type Transfer @entity(immutable: true) {
+  "Unique identifier: transaction hash + log index"
   id: ID!
 
-  "Block number when this entity was created"
-  blockNumber: BigInt!
-
-  "Timestamp when this entity was created"
-  timestamp: BigInt!
-
-  "Example address field"
+  "Sender address"
   from: Bytes!
 
-  "Example value field"
+  "Recipient address"
+  to: Bytes!
+
+  "Amount transferred"
   value: BigInt!
+
+  "Block number"
+  blockNumber: BigInt!
+
+  "Block timestamp"
+  blockTimestamp: BigInt!
+
+  "Transaction hash"
+  transactionHash: Bytes!
 }

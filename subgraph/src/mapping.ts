@@ -1,32 +1,16 @@
-// Example Event Handler for The Graph Subgraph
-// Replace this with your actual mapping logic
+import { Transfer as TransferEvent } from "../generated/WETH/ERC20"
+import { Transfer } from "../generated/schema"
 
-import { BigInt } from "@graphprotocol/graph-ts";
-import { ExampleEntity } from "../generated/schema";
-// Uncomment and replace with your generated event type:
-// import { Transfer } from "../generated/ExampleContract/ExampleContract";
+export function handleTransfer(event: TransferEvent): void {
+  let id = event.transaction.hash.toHex() + "-" + event.logIndex.toString()
 
-// Example event handler - replace with your actual implementation
-// export function handleTransfer(event: Transfer): void {
-//   // Create a unique ID for this entity
-//   let id = event.transaction.hash.toHex() + "-" + event.logIndex.toString();
-//
-//   // Load or create the entity
-//   let entity = ExampleEntity.load(id);
-//   if (!entity) {
-//     entity = new ExampleEntity(id);
-//   }
-//
-//   // Set entity fields from event data
-//   entity.blockNumber = event.block.number;
-//   entity.timestamp = event.block.timestamp;
-//   entity.from = event.params.from;
-//   entity.value = event.params.value;
-//
-//   // Save the entity
-//   entity.save();
-// }
+  let transfer = new Transfer(id)
+  transfer.from = event.params.from
+  transfer.to = event.params.to
+  transfer.value = event.params.value
+  transfer.blockNumber = event.block.number
+  transfer.blockTimestamp = event.block.timestamp
+  transfer.transactionHash = event.transaction.hash
 
-// Placeholder export to satisfy TypeScript compiler
-// Remove this once you add your actual handlers
-export function placeholder(): void {}
+  transfer.save()
+}
