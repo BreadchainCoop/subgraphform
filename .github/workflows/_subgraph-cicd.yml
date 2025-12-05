@@ -1,0 +1,109 @@
+name: Subgraph CI/CD
+
+on:
+  workflow_call:
+    inputs:
+      subgraph-name:
+        description: 'The Graph Studio subgraph name for deployment'
+        required: true
+        type: string
+      working-directory:
+        description: 'Path to subgraph directory'
+        required: false
+        type: string
+        default: '.'
+      deploy-on-pr:
+        description: 'Deploy on pull requests'
+        required: false
+        type: boolean
+        default: false
+      deploy-on-main:
+        description: 'Deploy on push to main'
+        required: false
+        type: boolean
+        default: true
+      node-version:
+        description: 'Node.js version'
+        required: false
+        type: string
+        default: '20'
+      run-tests:
+        description: 'Run tests during CI'
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      GRAPH_DEPLOY_KEY:
+        description: 'The Graph Studio deploy key'
+        required: true
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'yarn'
+          cache-dependency-path: ${{ inputs.working-directory }}/yarn.lock
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Generate code from GraphQL schema
+        run: yarn codegen
+
+      - name: Build subgraph
+        run: yarn build
+
+      - name: Run tests
+        if: inputs.run-tests
+        run: yarn test
+
+  deploy:
+    name: Deploy to The Graph Studio
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: |
+      (inputs.deploy-on-main && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (inputs.deploy-on-pr && github.event_name == 'pull_request')
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'yarn'
+          cache-dependency-path: ${{ inputs.working-directory }}/yarn.lock
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Generate code from GraphQL schema
+        run: yarn codegen
+
+      - name: Build subgraph
+        run: yarn build
+
+      - name: Authenticate with The Graph Studio
+        run: yarn graph auth ${{ secrets.GRAPH_DEPLOY_KEY }}
+
+      - name: Deploy subgraph
+        run: |
+          VERSION_LABEL=$(echo ${{ github.sha }} | cut -c1-7)
+          yarn graph deploy --version-label $VERSION_LABEL ${{ inputs.subgraph-name }}

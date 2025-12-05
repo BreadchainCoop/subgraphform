@@ -1,0 +1,25 @@
+# Example Schema - ERC20 Transfer tracking
+# This schema tracks token transfers
+
+type Transfer @entity(immutable: true) {
+  "Unique identifier: transaction hash + log index"
+  id: ID!
+
+  "Sender address"
+  from: Bytes!
+
+  "Recipient address"
+  to: Bytes!
+
+  "Amount transferred"
+  value: BigInt!
+
+  "Block number"
+  blockNumber: BigInt!
+
+  "Block timestamp"
+  blockTimestamp: BigInt!
+
+  "Transaction hash"
+  transactionHash: Bytes!
+}
