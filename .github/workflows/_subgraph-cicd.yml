@@ -37,10 +37,15 @@ on:
         description: 'The Graph Studio deploy key'
         required: true
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
@@ -72,6 +77,7 @@ jobs:
   deploy:
     name: Deploy to The Graph Studio
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     needs: build-and-test
     if: |
       (inputs.deploy-on-main && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
@@ -93,12 +99,6 @@ jobs:
 
       - name: Install dependencies
         run: yarn install --frozen-lockfile
-
-      - name: Generate code from GraphQL schema
-        run: yarn codegen
-
-      - name: Build subgraph
-        run: yarn build
 
       - name: Authenticate with The Graph Studio
         run: yarn graph auth ${{ secrets.GRAPH_DEPLOY_KEY }}
