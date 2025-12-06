@@ -1,6 +1,6 @@
 # subgraphform
 
-A reusable CI/CD workflow for The Graph subgraphs. Integrate into any subgraph repository with a single workflow file.
+A reusable CI/CD workflow for [The Graph subgraphs](https://thegraph.com/docs/en/subgraphs/developing/subgraphs/). Integrate into any subgraph repository with a single workflow file.
 
 ## Quick Start
 
