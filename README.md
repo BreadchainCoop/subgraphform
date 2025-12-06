@@ -2,7 +2,7 @@
 
 A reusable CI/CD workflow for [The Graph subgraphs](https://thegraph.com/docs/en/subgraphs/developing/subgraphs/). Integrate into any subgraph repository with a single workflow file.
 - Auto build and run tests on PR to main
-- Deploys automatically when merged to main
+- Deploys subgraph automatically when merged to main
 - Highly customizable
 
 ## Quick Start
