@@ -127,6 +127,9 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
 
+      - name: Generate code from GraphQL schema
+        run: yarn codegen
+
       - name: Authenticate with The Graph Studio
         run: yarn graph auth ${{ secrets.GRAPH_DEPLOY_KEY }}
 
