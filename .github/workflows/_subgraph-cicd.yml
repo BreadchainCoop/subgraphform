@@ -42,10 +42,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      subgraph-changed: ${{ steps.filter.outputs.subgraph }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for subgraph changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            subgraph:
+              - '${{ inputs.working-directory }}/**'
+
   build-and-test:
     name: Build and Test
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    needs: detect-changes
+    if: needs.detect-changes.outputs.subgraph-changed == 'true'
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
@@ -78,10 +100,15 @@ jobs:
     name: Deploy to The Graph Studio
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    needs: build-and-test
+    needs: [detect-changes, build-and-test]
     if: |
-      (inputs.deploy-on-main && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
-      (inputs.deploy-on-pr && github.event_name == 'pull_request')
+      always() &&
+      needs.detect-changes.outputs.subgraph-changed == 'true' &&
+      needs.build-and-test.result == 'success' &&
+      (
+        (inputs.deploy-on-main && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+        (inputs.deploy-on-pr && github.event_name == 'pull_request')
+      )
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
