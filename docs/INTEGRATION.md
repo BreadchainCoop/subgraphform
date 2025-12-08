@@ -61,12 +61,16 @@ your-repo/
 | `deploy-on-main` | boolean | No | `true` | Deploy on push to main branch |
 | `node-version` | string | No | `20` | Node.js version to use |
 | `run-tests` | boolean | No | `true` | Run tests during CI |
+| `run-integration-tests` | boolean | No | `false` | Run GND integration tests on main before deploy |
+| `integration-test-config` | string | No | `tests/integration/config.json` | Path to integration test config |
+| `ethereum-network` | string | No | `mainnet` | Ethereum network for GND (e.g., mainnet, sepolia) |
 
 ## Secrets
 
 | Secret | Required | Description |
 |--------|----------|-------------|
 | `GRAPH_DEPLOY_KEY` | **Yes** | The Graph Studio deployment key |
+| `ETHEREUM_RPC_URL` | Only if `run-integration-tests: true` | Ethereum RPC endpoint for GND |
 
 ## Examples
 
@@ -209,3 +213,150 @@ If using `working-directory`, ensure:
 - The path is relative to the repository root
 - The path does not start with `/` or `./`
 - The directory contains `package.json` and `yarn.lock`
+
+## Integration Testing with GND
+
+The workflow supports integration testing using [Graph Node Developer Mode (GND)](https://thegraph.com/docs/en/subgraphs/developing/creating/graph-node-dev/). This spins up a local graph-node, deploys your subgraph, and runs predefined GraphQL queries to validate the subgraph works correctly before deploying to The Graph Studio.
+
+### Enabling Integration Tests
+
+1. **Add the ETHEREUM_RPC_URL secret** to your repository:
+   - Go to Settings → Secrets and variables → Actions
+   - Add `ETHEREUM_RPC_URL` with your Ethereum RPC endpoint (e.g., Alchemy or Infura)
+
+2. **Enable integration tests** in your workflow:
+
+```yaml
+jobs:
+  subgraph:
+    uses: BreadchainCoop/subgraphform/.github/workflows/_subgraph-cicd.yml@main
+    with:
+      subgraph-name: my-subgraph
+      run-integration-tests: true
+      ethereum-network: mainnet
+    secrets:
+      GRAPH_DEPLOY_KEY: ${{ secrets.GRAPH_DEPLOY_KEY }}
+      ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+```
+
+3. **Create a test config file** at `tests/integration/config.json`:
+
+```json
+{
+  "tests": [
+    {
+      "name": "Query recent transfers",
+      "query": "{ transfers(first: 5) { id from to value } }",
+      "matchType": "exists"
+    },
+    {
+      "name": "Validate specific data",
+      "query": "{ transfer(id: \"0x123\") { value } }",
+      "expected": { "transfer": { "value": "1000000000000000000" } },
+      "matchType": "exact"
+    }
+  ]
+}
+```
+
+### Test Config Format
+
+Each test in the config has the following fields:
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Human-readable test name |
+| `query` | string | Yes | GraphQL query to execute |
+| `variables` | object | No | Query variables |
+| `expected` | object | No | Expected response data |
+| `matchType` | string | No | How to validate: `exists`, `exact`, or `contains` |
+
+### Match Types
+
+- **`exists`** (default): Passes if the query returns any data without errors
+- **`exact`**: Passes if response exactly matches `expected`
+- **`contains`**: Passes if response contains all keys/values in `expected`
+
+### Example Test Configs
+
+#### Basic Schema Validation
+
+```json
+{
+  "tests": [
+    {
+      "name": "Query entities exist",
+      "query": "{ transfers(first: 1) { id } }",
+      "matchType": "exists"
+    }
+  ]
+}
+```
+
+#### Exact Match
+
+```json
+{
+  "tests": [
+    {
+      "name": "Validate known transfer",
+      "query": "{ transfer(id: \"0xabc-1\") { from to } }",
+      "expected": {
+        "transfer": {
+          "from": "0x1234...",
+          "to": "0x5678..."
+        }
+      },
+      "matchType": "exact"
+    }
+  ]
+}
+```
+
+#### Contains Match
+
+```json
+{
+  "tests": [
+    {
+      "name": "Transfer has required fields",
+      "query": "{ transfers(first: 1) { id from to value } }",
+      "expected": {
+        "transfers": [{ "id": "0xabc-1" }]
+      },
+      "matchType": "contains"
+    }
+  ]
+}
+```
+
+### How It Works
+
+When `run-integration-tests: true` and a push to main is detected:
+
+1. **Build**: The subgraph is built with `yarn codegen && yarn build`
+2. **Start GND**: Graph Node Developer Mode starts with PostgreSQL
+3. **Wait**: The test runner waits for the subgraph to sync (up to 2 minutes)
+4. **Test**: Each query in the config is executed and validated
+5. **Report**: Results are printed with pass/fail status
+6. **Gate**: If any test fails, the deployment is blocked
+
+### Troubleshooting Integration Tests
+
+#### "Timeout waiting for subgraph"
+
+- The subgraph may be taking too long to sync
+- Check your RPC endpoint is working and has good rate limits
+- The start block may be too far back; consider using a more recent block for testing
+
+#### "GraphQL errors" in test results
+
+- The query syntax may be invalid
+- Entity names are case-sensitive; check your schema
+- Check that queried fields exist in your schema
+
+#### Tests pass locally but fail in CI
+
+- Ensure `ETHEREUM_RPC_URL` secret is set in GitHub
+- Check the RPC endpoint is accessible from GitHub Actions
+- Verify the network name matches your subgraph.yaml

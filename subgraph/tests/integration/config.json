@@ -1,0 +1,24 @@
+{
+  "tests": [
+    {
+      "name": "Query recent transfers (schema validation)",
+      "query": "{ transfers(first: 5, orderBy: blockNumber, orderDirection: desc) { id from to value blockNumber blockTimestamp transactionHash } }",
+      "matchType": "exists"
+    },
+    {
+      "name": "Validate transfer entity fields exist",
+      "query": "{ transfers(first: 1) { id from to value blockNumber blockTimestamp transactionHash } }",
+      "matchType": "exists"
+    },
+    {
+      "name": "Test ordering by block number ascending",
+      "query": "{ transfers(first: 3, orderBy: blockNumber, orderDirection: asc) { blockNumber } }",
+      "matchType": "exists"
+    },
+    {
+      "name": "Test pagination with skip",
+      "query": "{ transfers(first: 2, skip: 1) { id } }",
+      "matchType": "exists"
+    }
+  ]
+}

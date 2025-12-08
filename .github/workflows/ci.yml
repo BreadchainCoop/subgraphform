@@ -37,7 +37,21 @@ jobs:
 
       # Optional: Node.js version (default: "20")
       # node-version: "20"
+
+      # Optional: Enable GND integration tests (runs on main before deploy)
+      # Requires ETHEREUM_RPC_URL secret to be set
+      run-integration-tests: true
+
+      # Optional: Path to integration test config (default: "tests/integration/config.json")
+      # integration-test-config: tests/integration/config.json
+
+      # Optional: Ethereum network for GND (default: "mainnet")
+      # ethereum-network: mainnet
     secrets:
       # Required: Your Graph Studio deploy key
       # Set this in your repo's Settings > Secrets > Actions
       GRAPH_DEPLOY_KEY: ${{ secrets.GRAPH_DEPLOY_KEY }}
+
+      # Required for integration tests: Ethereum RPC endpoint
+      # Example: https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY
+      ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}

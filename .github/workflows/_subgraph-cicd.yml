@@ -32,10 +32,28 @@ on:
         required: false
         type: boolean
         default: true
+      run-integration-tests:
+        description: 'Run GND integration tests on main before deploy'
+        required: false
+        type: boolean
+        default: false
+      integration-test-config:
+        description: 'Path to integration test config file (JSON)'
+        required: false
+        type: string
+        default: 'tests/integration/config.json'
+      ethereum-network:
+        description: 'Ethereum network name (e.g., mainnet, sepolia)'
+        required: false
+        type: string
+        default: 'mainnet'
     secrets:
       GRAPH_DEPLOY_KEY:
         description: 'The Graph Studio deploy key'
         required: true
+      ETHEREUM_RPC_URL:
+        description: 'Ethereum RPC endpoint for GND integration tests'
+        required: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -96,15 +114,89 @@ jobs:
         if: inputs.run-tests
         run: yarn test
 
-  deploy:
-    name: Deploy to The Graph Studio
+  integration-test:
+    name: Integration Test (GND)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: [detect-changes, build-and-test]
     if: |
+      inputs.run-integration-tests &&
+      needs.detect-changes.outputs.subgraph-changed == 'true' &&
+      needs.build-and-test.result == 'success' &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main'
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: graph
+          POSTGRES_PASSWORD: graph
+          POSTGRES_DB: graph
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'yarn'
+          cache-dependency-path: ${{ inputs.working-directory }}/yarn.lock
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Generate code and build
+        run: |
+          yarn codegen
+          yarn build
+
+      - name: Install GND
+        run: yarn graph node install
+
+      - name: Start GND and run tests
+        env:
+          ETHEREUM_RPC_URL: ${{ secrets.ETHEREUM_RPC_URL }}
+          NETWORK: ${{ inputs.ethereum-network }}
+          TEST_CONFIG: ${{ inputs.integration-test-config }}
+          SUBGRAPH_NAME: ${{ inputs.subgraph-name }}
+        run: |
+          # Start GND in background
+          gnd --ethereum-rpc "$NETWORK:$ETHEREUM_RPC_URL" \
+              --postgres-url "postgresql://graph:graph@localhost:5432/graph" \
+              --manifests ./subgraph.yaml &
+          GND_PID=$!
+
+          # Run integration tests
+          node scripts/run-integration-tests.js "$TEST_CONFIG" "$SUBGRAPH_NAME"
+          TEST_EXIT=$?
+
+          # Cleanup
+          kill $GND_PID 2>/dev/null || true
+          exit $TEST_EXIT
+
+  deploy:
+    name: Deploy to The Graph Studio
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [detect-changes, build-and-test, integration-test]
+    if: |
       always() &&
       needs.detect-changes.outputs.subgraph-changed == 'true' &&
       needs.build-and-test.result == 'success' &&
+      (needs.integration-test.result == 'success' || needs.integration-test.result == 'skipped') &&
       (
         (inputs.deploy-on-main && github.event_name == 'push' && github.ref == 'refs/heads/main') ||
         (inputs.deploy-on-pr && github.event_name == 'pull_request')
