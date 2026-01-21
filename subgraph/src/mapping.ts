@@ -14,3 +14,4 @@ export function handleTransfer(event: TransferEvent): void {
 
   transfer.save()
 }
+
