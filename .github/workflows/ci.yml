@@ -35,6 +35,9 @@ jobs:
       # Optional: Skip tests since example has no real tests
       run-tests: false
 
+      # Optional: Run subgraph linter (default: true)
+      run-lint: true
+
       # Optional: Node.js version (default: "20")
       # node-version: "20"
     secrets:

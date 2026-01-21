@@ -32,6 +32,11 @@ on:
         required: false
         type: boolean
         default: true
+      run-lint:
+        description: 'Run subgraph linter during CI'
+        required: false
+        type: boolean
+        default: true
     secrets:
       GRAPH_DEPLOY_KEY:
         description: 'The Graph Studio deploy key'
@@ -88,6 +93,20 @@ jobs:
 
       - name: Generate code from GraphQL schema
         run: yarn codegen
+
+      - name: Setup subgraph linter
+        if: inputs.run-lint
+        run: |
+          git clone --depth 1 https://github.com/graphprotocol/subgraph-linter.git /tmp/subgraph-linter
+          cd /tmp/subgraph-linter
+          npm install
+          npm run build
+
+      - name: Run subgraph linter
+        if: inputs.run-lint
+        run: |
+          cd /tmp/subgraph-linter
+          npm run check -- --manifest ${{ github.workspace }}/${{ inputs.working-directory }}/subgraph.yaml --tsconfig ${{ github.workspace }}/${{ inputs.working-directory }}/tsconfig.json
 
       - name: Build subgraph
         run: yarn build
