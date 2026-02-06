@@ -33,7 +33,7 @@ That's it! The workflow will:
 - Build and test on pull requests
 - Deploy to The Graph Studio on merge to main
 
-** IMPORTANT: ** We Reccomended pinning to the latest commit instead of main so you are in control of what version you are on. Pointing to main means you automatically receive our updates.
+**IMPORTANT:** We Reccomended pinning to the latest commit instead of main so you are in control of what version you are on. Pointing to main means you automatically receive our updates.
 
 ## Documentation
 
