@@ -37,13 +37,18 @@ on:
         required: false
         type: boolean
         default: true
+      network:
+        description: 'Network name for multi-chain builds (e.g., sepolia, base-sepolia). Passed to graph build/deploy --network.'
+        required: false
+        type: string
+        default: ""
     secrets:
       GRAPH_DEPLOY_KEY:
         description: 'The Graph Studio deploy key'
         required: true
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ inputs.subgraph-name }}
   cancel-in-progress: true
 
 jobs:
@@ -109,7 +114,7 @@ jobs:
           npm run check -- --manifest ${{ github.workspace }}/${{ inputs.working-directory }}/subgraph.yaml --tsconfig ${{ github.workspace }}/${{ inputs.working-directory }}/tsconfig.json
 
       - name: Build subgraph
-        run: yarn build
+        run: yarn build ${{ inputs.network && format('--network {0}', inputs.network) || '' }}
 
       - name: Run tests
         if: inputs.run-tests
@@ -155,4 +160,4 @@ jobs:
       - name: Deploy subgraph
         run: |
           VERSION_LABEL=$(echo ${{ github.sha }} | cut -c1-7)
-          yarn graph deploy --version-label $VERSION_LABEL ${{ inputs.subgraph-name }}
+          yarn graph deploy ${{ inputs.network && format('--network {0}', inputs.network) || '' }} --version-label $VERSION_LABEL ${{ inputs.subgraph-name }}
